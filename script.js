@@ -17,6 +17,8 @@ class Line {
     }
 
     draw() {
+        context.lineWidth = 2;
+        context.strokeStyle = "#FFFFFF"; 
         // Draw the line
         context.beginPath();
         context.moveTo(this.x1, this.y1);
@@ -56,8 +58,11 @@ canvas.addEventListener('mousemove', handleMouseMove);
 canvas.addEventListener('mouseup', handleMouseUp);
 canvas.addEventListener('contextmenu', handleRightClick);
 
-context.lineWidth = 2;
-context.strokeStyle = "#000000"; // black
+window.onresize = () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    updateCanvas();
+};
 
 const tolerance = 8;
 let lines = [];
@@ -74,15 +79,39 @@ function switchToLine() {
     // Empty the array of lines
     lines = [];
     // Create a new line and adds it to the array
-    lines.push(new Line(200, 200, 400, 400));
+    lines.push(new Line(canvas.width/4, canvas.height/2-100, canvas.width/2 * 3/2, canvas.height/2-100));
     numLines = 1
 
     updateCanvas();
 }
 
-function switchToPolygon() {
-    context.clearRect(0, 0, canvas.width, canvas.height);
+function switchToPolygon(n) {
+    console.log('Switching to polygon mode');
+
     lines = [];
+    numLines = 0;
+    // Convert the number of sides to an integer
+    numSides = +n;
+
+    const radius = 200;
+    let x1, y1, x2, y2;
+
+    // Draw regular polygon from center point
+    for (let i = 0; i < numSides; i++) {
+        x1 = radius * Math.cos(2 * Math.PI * i / numSides) + canvas.width/2;
+        y1 = radius * Math.sin(2 * Math.PI * i / numSides) + canvas.height/2 - 100;
+        x2 = radius * Math.cos(2 * Math.PI * (i + 1) / numSides) + canvas.width/2;
+        y2 = radius * Math.sin(2 * Math.PI * (i + 1) / numSides) + canvas.height/2 - 100;
+        lines.push(new Line(x1, y1, x2, y2));
+        numLines++;
+    }
+    // Connect the lines
+    for (let i = 0; i < numSides; i++) {
+        lines[i].connectedLeft = lines[((i - 1 + numSides) % numSides)];
+        lines[i].connectedRight = lines[(i + 1) % numSides];
+    }
+
+    updateCanvas();
 }
 
 function updateCanvas() {
@@ -234,3 +263,12 @@ function distanceToLine(x, y, x1, y1, x2, y2) {
 
 // Starts in line mode
 switchToLine();
+
+let input = document.getElementById('sides');
+
+input.addEventListener('keyup', function(event) {
+    if (event.key == "Enter") {
+        const numSides = input.value;
+        switchToPolygon(numSides);
+    }
+});
