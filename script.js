@@ -216,7 +216,7 @@ function handleRightClick(event) {
     for (let i = 0; i < numLines; i++) {
         // If mouse position is over a line, split the line in two with extreme points in the mouse position
         // and add a new line with the same extreme points as the original line
-        if (distanceToLine(mousePos.x, mousePos.y, lines[i].x1, lines[i].y1, lines[i].x2, lines[i].y2) < tolerance) {
+        if (distanceToLineSegment(mousePos.x, mousePos.y, lines[i].x1, lines[i].y1, lines[i].x2, lines[i].y2) < tolerance) {
             lines.push(new Line(mousePos.x, mousePos.y, lines[i].x2, lines[i].y2));
             console.log('Splitting line');
             lines[i].x2 = mousePos.x;
@@ -252,13 +252,26 @@ function distanceToPoint(x1, y1, x2, y2) {
     return Math.sqrt(dx*dx + dy*dy);
 }
 
-// Returns the distance between a point and a line
-function distanceToLine(x, y, x1, y1, x2, y2) {
+// Returns the distance between a point and a line segment
+function distanceToLineSegment(x, y, x1, y1, x2, y2) {
     const dx = x2 - x1;
     const dy = y2 - y1;
-    const numerator = Math.abs(dy*x - dx*y + x2*y1 - x1*y2);
-    const denominator = Math.sqrt(dx*dx + dy*dy);
-    return (numerator/denominator);
+    const dotProduct = (x - x1) * dx + (y - y1) * dy;
+    const squaredLength = dx * dx + dy * dy;
+    
+    let distance;
+    
+    if (dotProduct <= 0) {
+        distance = distanceToPoint(x, y, x1, y1);
+    } else if (dotProduct >= squaredLength) {
+        distance = distanceToPoint(x, y, x2, y2);
+    } else {
+        const projection = dotProduct / squaredLength;
+        const projectedPointX = x1 + dx * projection;
+        const projectedPointY = y1 + dy * projection;
+        distance = Math.sqrt((x - projectedPointX) * (x - projectedPointX) + (y - projectedPointY) * (y - projectedPointY));
+    }
+    return distance;
 }
 
 // Starts in line mode
